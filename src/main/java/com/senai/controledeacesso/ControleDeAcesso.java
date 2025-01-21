@@ -13,12 +13,14 @@ public class ControleDeAcesso {
     // Caminho para a pasta ControleDeAcesso no diretório do usuário
     private static final File pastaControleDeAcesso = new File(System.getProperty("user.home"), "ControleDeAcesso");
 
-    // Caminho para o arquivo bancoDeDados.txt e para a pasta imagens
+    // Caminho para o arquivo bancoDeDados.txt, registros.txt e para a pasta imagens
     private static final File arquivoBancoDeDados = new File(pastaControleDeAcesso, "bancoDeDados.txt");
+    private static final File arquivoRegistros = new File(pastaControleDeAcesso, "registros.txt");
     public static final File pastaImagens = new File(pastaControleDeAcesso, "imagens");
 
     static String[] cabecalho = {"ID", "IdAcesso", "Nome", "Telefone", "Email", "Imagem"};
     static String[][] matrizCadastro = {{"", ""}};
+    static String[] cabecalhoRegistro = {"ID", "Nome", "Horário", "Imagem"};
     public static String[][] matrizRegistrosDeAcesso = {{"", "", ""}};// inicia a matriz com uma linha e duas colunas com "" para que na primeira vez não apareça null na tabela de registros
 
     static volatile boolean modoCadastrarIdAcesso = false;
@@ -37,6 +39,7 @@ public class ControleDeAcesso {
     public static void main(String[] args) {
         verificarEstruturaDeDiretorios();
         carregarDadosDoArquivo();
+        carregarDadosDoArquivoRegistro();
         conexaoMQTT = new CLienteMQTT(brokerUrl, topico, ControleDeAcesso::processarMensagemMQTTRecebida);
         servidorHTTPS = new ServidorHTTPS(); // Inicia o servidor HTTPS
         menuPrincipal();
@@ -60,7 +63,10 @@ public class ControleDeAcesso {
                     |       3- Atualizar cadastro por id                    |
                     |       4- Deletar um cadastro por id                   |
                     |       5- Associar TAG ou cartão de acesso ao usuário  |
-                    |       6- Sair                                         |
+                    |       6- Exibir registro                              |
+                    |       7- Pesquisar por ID                             |
+                    |       8- Deletar todos os registros                   |
+                    |       9- Sair                                         |
                     _________________________________________________________
                     """;
             System.out.println(menu);
@@ -84,13 +90,22 @@ public class ControleDeAcesso {
                     aguardarCadastroDeIdAcesso();
                     break;
                 case 6:
+                    exibirRegistro();
+                    break;
+                case 7:
+                    pesquisarRegistro();
+                    break;
+                case 8:
+                    deletarRegistro();
+                    break;
+                case 9:
                     System.out.println("Fim do programa!");
                     break;
                 default:
                     System.out.println("Opção inválida!");
             }
 
-        } while (opcao != 6);
+        } while (opcao != 9);
     }
 
     private static void aguardarCadastroDeIdAcesso() {
@@ -144,14 +159,16 @@ public class ControleDeAcesso {
 
             // Verifica se o idAcesso da matriz corresponde ao idAcesso recebido
             if (idAcessoNaMatriz.equals(idAcessoRecebido)) {
-                novaMatrizRegistro[linhaNovoRegistro][0] = matrizCadastro[linhas][2]; // Assume que o nome do usuário está na coluna 3
-                novaMatrizRegistro[linhaNovoRegistro][1] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                novaMatrizRegistro[linhaNovoRegistro][2] = matrizCadastro[linhas][5];
+                novaMatrizRegistro[linhaNovoRegistro][0] = String.valueOf(matrizRegistrosDeAcesso.length);// preenche o campo id com o numero gerado pelo for
+                novaMatrizRegistro[linhaNovoRegistro][1] = matrizCadastro[linhas][2]; // Assume que o nome do usuário está na coluna 3
+                novaMatrizRegistro[linhaNovoRegistro][2] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                novaMatrizRegistro[linhaNovoRegistro][3] = matrizCadastro[linhas][5];
                 System.out.println("Usuário encontrado: " +
                         novaMatrizRegistro[linhaNovoRegistro][0] + " - " +
                         novaMatrizRegistro[linhaNovoRegistro][1]);
                 usuarioEncontrado = true; // Marca que o usuário foi encontrado
                 matrizRegistrosDeAcesso = novaMatrizRegistro;
+                salvarDadosNoArquivoRegistro();
                 break; // Sai do loop, pois já encontrou o usuário
             }
         }
@@ -210,6 +227,19 @@ public class ControleDeAcesso {
         System.out.println(tabelaCadastro);
     }
 
+    private static void exibirRegistro() {
+        StringBuilder tabelaRegistro = new StringBuilder();
+
+        for (String[] usuarioLinha : matrizRegistrosDeAcesso) {
+            for (int colunas = 0; colunas < matrizRegistrosDeAcesso[0].length; colunas++) {
+                int largura = colunas < 2 ? (colunas == 0 ? 4 : 8) : 25;
+                tabelaRegistro.append(String.format("%-" + largura + "s | ", usuarioLinha[colunas]));
+            }
+            tabelaRegistro.append("\n");
+        }
+        System.out.println(tabelaRegistro);
+    }
+
     private static void cadastrarUsuario() {
         System.out.print("Digite a quantidade de usuarios que deseja cadastrar:");
         int qtdUsuarios = scanner.nextInt();
@@ -258,6 +288,27 @@ public class ControleDeAcesso {
         salvarDadosNoArquivo();
     }
 
+    public static void pesquisarRegistro(){
+        System.out.println("Digite o Id para consultar:");
+        int idRegistro = scanner.nextInt();
+        scanner.nextLine();
+
+        boolean encontrado = false;
+        for (int i = 0; i < matrizRegistrosDeAcesso.length; i++) {
+            if (matrizRegistrosDeAcesso[i][0].equals(String.valueOf(idRegistro))) {
+                for (int dados = 0; dados < matrizRegistrosDeAcesso[idRegistro].length; dados++) {
+                    System.out.print(matrizRegistrosDeAcesso[idRegistro][dados] + ": ");
+                }
+                encontrado = true;
+            }
+        }
+        if (!encontrado) {
+            System.out.println("Registro não foi encontrado!");
+        }else
+            System.out.println("\nId pesquisado com sucesso");
+    }
+
+
     public static void deletarUsuario() {
         String[][] novaMatriz = new String[matrizCadastro.length - 1][matrizCadastro[0].length];
         int idUsuario = idUsuarioRecebidoPorHTTP;
@@ -281,6 +332,12 @@ public class ControleDeAcesso {
         salvarDadosNoArquivo();
         System.out.println("-----------------------Deletado com sucesso------------------------\n");
         idUsuarioRecebidoPorHTTP = 0;
+    }
+
+    private static void deletarRegistro(){
+        matrizRegistrosDeAcesso = new String[][]{};
+        System.out.println("Deletado com sucesso!");
+        salvarDadosNoArquivoRegistro();
     }
 
     // Funções para persistência de dados
@@ -310,9 +367,45 @@ public class ControleDeAcesso {
         matrizCadastro[0] = cabecalho;
     }
 
+    private static void carregarDadosDoArquivoRegistro() {
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(arquivoRegistros))) {
+            String linha;
+            StringBuilder conteudo = new StringBuilder();
+
+            while ((linha = reader.readLine()) != null) {
+                if (!linha.trim().isEmpty()) {
+                    conteudo.append(linha).append("\n");
+                }
+            }
+
+            if (!conteudo.toString().trim().isEmpty()) {
+                String[] linhasDaTabela = conteudo.toString().split("\n");
+                matrizRegistrosDeAcesso = new String[linhasDaTabela.length][cabecalho.length];
+                for (int i = 0; i < linhasDaTabela.length; i++) {
+                    matrizRegistrosDeAcesso[i] = linhasDaTabela[i].split(",");
+                }
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        matrizRegistrosDeAcesso[0] = cabecalhoRegistro;
+    }
+
     public static void salvarDadosNoArquivo() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(arquivoBancoDeDados))) {
             for (String[] linha : matrizCadastro) {
+                writer.write(String.join(",", linha) + "\n");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void salvarDadosNoArquivoRegistro() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(arquivoRegistros))) {
+            for (String[] linha : matrizRegistrosDeAcesso) {
                 writer.write(String.join(",", linha) + "\n");
             }
         } catch (IOException e) {
@@ -340,6 +433,19 @@ public class ControleDeAcesso {
                 }
             } catch (IOException e) {
                 System.out.println("Erro ao criar arquivo bancoDeDados.txt: " + e.getMessage());
+            }
+        }
+
+        // Verifica se o arquivo registros.txt existe, caso contrário, cria
+        if (!arquivoRegistros.exists()) {
+            try {
+                if (arquivoRegistros.createNewFile()) {
+                    System.out.println("Arquivo registros.txt criado com sucesso.");
+                } else {
+                    System.out.println("Falha ao criar o arquivo registros.txt.");
+                }
+            } catch (IOException e) {
+                System.out.println("Erro ao criar arquivo registros.txt: " + e.getMessage());
             }
         }
 
