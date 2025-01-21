@@ -297,11 +297,16 @@ public class ControleDeAcesso {
         for (int i = 0; i < matrizRegistrosDeAcesso.length; i++) {
             if (matrizRegistrosDeAcesso[i][0].equals(String.valueOf(idRegistro))) {
                 for (int dados = 0; dados < matrizRegistrosDeAcesso[idRegistro].length; dados++) {
-                    System.out.print(matrizRegistrosDeAcesso[idRegistro][dados] + ": ");
+                    System.out.print(cabecalhoRegistro[dados] + " | ");
+                }
+                System.out.println();
+                for (int dados = 0; dados < matrizRegistrosDeAcesso[idRegistro].length; dados++) {
+                    System.out.print(matrizRegistrosDeAcesso[idRegistro][dados] + " | ");
                 }
                 encontrado = true;
             }
         }
+        System.out.println();
         if (!encontrado) {
             System.out.println("Registro não foi encontrado!");
         }else
