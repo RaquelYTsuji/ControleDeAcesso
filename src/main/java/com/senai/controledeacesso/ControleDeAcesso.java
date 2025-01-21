@@ -20,7 +20,7 @@ public class ControleDeAcesso {
 
     static String[] cabecalho = {"ID", "IdAcesso", "Nome", "Telefone", "Email", "Imagem"};
     static String[][] matrizCadastro = {{"", ""}};
-    static String[] cabecalhoRegistro = {"ID", "Nome", "Horário", "Imagem"};
+    static String[] cabecalhoRegistro = {"Nome", "Horário", "Imagem"};
     public static String[][] matrizRegistrosDeAcesso = {{"", "", ""}};// inicia a matriz com uma linha e duas colunas com "" para que na primeira vez não apareça null na tabela de registros
 
     static volatile boolean modoCadastrarIdAcesso = false;
@@ -159,10 +159,9 @@ public class ControleDeAcesso {
 
             // Verifica se o idAcesso da matriz corresponde ao idAcesso recebido
             if (idAcessoNaMatriz.equals(idAcessoRecebido)) {
-                novaMatrizRegistro[linhaNovoRegistro][0] = String.valueOf(matrizRegistrosDeAcesso.length);// preenche o campo id com o numero gerado pelo for
-                novaMatrizRegistro[linhaNovoRegistro][1] = matrizCadastro[linhas][2]; // Assume que o nome do usuário está na coluna 3
-                novaMatrizRegistro[linhaNovoRegistro][2] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                novaMatrizRegistro[linhaNovoRegistro][3] = matrizCadastro[linhas][5];
+                novaMatrizRegistro[linhaNovoRegistro][0] = matrizCadastro[linhas][2]; // Assume que o nome do usuário está na coluna 3
+                novaMatrizRegistro[linhaNovoRegistro][1] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                novaMatrizRegistro[linhaNovoRegistro][2] = matrizCadastro[linhas][5];
                 System.out.println("Usuário encontrado: " +
                         novaMatrizRegistro[linhaNovoRegistro][0] + " - " +
                         novaMatrizRegistro[linhaNovoRegistro][1]);
@@ -230,6 +229,10 @@ public class ControleDeAcesso {
     private static void exibirRegistro() {
         StringBuilder tabelaRegistro = new StringBuilder();
 
+        for (int dados = 0; dados < matrizRegistrosDeAcesso[0].length; dados++) {
+            System.out.print(cabecalhoRegistro[dados] + " | ");
+        }
+        System.out.println();
         for (String[] usuarioLinha : matrizRegistrosDeAcesso) {
             for (int colunas = 0; colunas < matrizRegistrosDeAcesso[0].length; colunas++) {
                 int largura = colunas < 2 ? (colunas == 0 ? 4 : 8) : 25;
@@ -289,21 +292,27 @@ public class ControleDeAcesso {
     }
 
     public static void pesquisarRegistro(){
-        System.out.println("Digite o Id para consultar:");
-        int idRegistro = scanner.nextInt();
+        exibirCadastro();
+        System.out.println("Digite o Id do usuario cadastrado para consultar:");
+        int idCadastro = scanner.nextInt();
         scanner.nextLine();
 
         boolean encontrado = false;
-        for (int i = 0; i < matrizRegistrosDeAcesso.length; i++) {
-            if (matrizRegistrosDeAcesso[i][0].equals(String.valueOf(idRegistro))) {
-                for (int dados = 0; dados < matrizRegistrosDeAcesso[idRegistro].length; dados++) {
+        for (int i = 0; i < matrizCadastro.length; i++) {
+            if (matrizCadastro[i][0].equals(String.valueOf(idCadastro))) {
+                for (int dados = 0; dados < matrizRegistrosDeAcesso[idCadastro].length; dados++) {
                     System.out.print(cabecalhoRegistro[dados] + " | ");
                 }
                 System.out.println();
-                for (int dados = 0; dados < matrizRegistrosDeAcesso[idRegistro].length; dados++) {
-                    System.out.print(matrizRegistrosDeAcesso[idRegistro][dados] + " | ");
+                for (int j = 0; j < matrizRegistrosDeAcesso.length; j++) {
+                    if (matrizRegistrosDeAcesso[i][0].equals(String.valueOf(matrizCadastro[i][2]))) {
+                        for (int dados = 0; dados < matrizRegistrosDeAcesso[idCadastro].length; dados++) {
+                            System.out.print(matrizRegistrosDeAcesso[idCadastro][dados] + " | ");
+                        }
+                        System.out.println();
+                        encontrado = true;
+                    }
                 }
-                encontrado = true;
             }
         }
         System.out.println();
@@ -340,7 +349,7 @@ public class ControleDeAcesso {
     }
 
     private static void deletarRegistro(){
-        matrizRegistrosDeAcesso = new String[][]{};
+        matrizRegistrosDeAcesso = new String[][]{{}};
         System.out.println("Deletado com sucesso!");
         salvarDadosNoArquivoRegistro();
     }
@@ -395,7 +404,6 @@ public class ControleDeAcesso {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        matrizRegistrosDeAcesso[0] = cabecalhoRegistro;
     }
 
     public static void salvarDadosNoArquivo() {
