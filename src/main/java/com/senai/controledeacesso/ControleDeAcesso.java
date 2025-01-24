@@ -227,20 +227,24 @@ public class ControleDeAcesso {
     }
 
     private static void exibirRegistro() {
-        StringBuilder tabelaRegistro = new StringBuilder();
+        if (matrizRegistrosDeAcesso[0][0].isEmpty()){
+            System.out.println("Registro vazio");
+        } else {
+            StringBuilder tabelaRegistro = new StringBuilder();
 
-        for (int dados = 0; dados < matrizRegistrosDeAcesso[0].length; dados++) {
-            System.out.print(cabecalhoRegistro[dados] + " | ");
-        }
-        System.out.println();
-        for (String[] usuarioLinha : matrizRegistrosDeAcesso) {
-            for (int colunas = 0; colunas < matrizRegistrosDeAcesso[0].length; colunas++) {
-                int largura = colunas < 2 ? (colunas == 0 ? 4 : 8) : 25;
-                tabelaRegistro.append(String.format("%-" + largura + "s | ", usuarioLinha[colunas]));
+            for (int dados = 0; dados < matrizRegistrosDeAcesso[0].length; dados++) {
+                System.out.print(cabecalhoRegistro[dados] + " | ");
             }
-            tabelaRegistro.append("\n");
+            System.out.println();
+            for (String[] usuarioLinha : matrizRegistrosDeAcesso) {
+                for (int colunas = 0; colunas < matrizRegistrosDeAcesso[0].length; colunas++) {
+                    int largura = colunas < 2 ? (colunas == 0 ? 4 : 8) : 25;
+                    tabelaRegistro.append(String.format("%-" + largura + "s | ", usuarioLinha[colunas]));
+                }
+                tabelaRegistro.append("\n");
+            }
+            System.out.println(tabelaRegistro);
         }
-        System.out.println(tabelaRegistro);
     }
 
     private static void cadastrarUsuario() {
@@ -297,29 +301,33 @@ public class ControleDeAcesso {
         int idCadastro = scanner.nextInt();
         scanner.nextLine();
 
-        boolean encontrado = false;
-        for (int i = 0; i < matrizCadastro.length; i++) {
-            if (matrizCadastro[i][0].equals(String.valueOf(idCadastro))) {
-                for (int dados = 0; dados < matrizRegistrosDeAcesso[idCadastro].length; dados++) {
-                    System.out.print(cabecalhoRegistro[dados] + " | ");
-                }
-                System.out.println();
-                for (int j = 0; j < matrizRegistrosDeAcesso.length; j++) {
-                    if (matrizRegistrosDeAcesso[i][0].equals(String.valueOf(matrizCadastro[i][2]))) {
-                        for (int dados = 0; dados < matrizRegistrosDeAcesso[idCadastro].length; dados++) {
-                            System.out.print(matrizRegistrosDeAcesso[idCadastro][dados] + " | ");
+        if (matrizRegistrosDeAcesso[0][0].isBlank()){
+            System.out.println("Registro vazio");
+        } else {
+            boolean encontrado = false;
+            for (int i = 0; i < matrizCadastro.length; i++) {
+                if (matrizCadastro[i][0].equals(String.valueOf(idCadastro))) {
+                    for (int dados = 0; dados < matrizRegistrosDeAcesso[0].length; dados++) {
+                        System.out.print(cabecalhoRegistro[dados] + " | ");
+                    }
+                    System.out.println();
+                    for (int j = 0; j < matrizRegistrosDeAcesso.length; j++) {
+                        if (matrizRegistrosDeAcesso[j][0].equals(String.valueOf(matrizCadastro[i][2]))) {
+                            for (int dados = 0; dados < matrizRegistrosDeAcesso[0].length; dados++) {
+                                System.out.print(matrizRegistrosDeAcesso[j][dados] + " | ");
+                            }
+                            System.out.println();
+                            encontrado = true;
                         }
-                        System.out.println();
-                        encontrado = true;
                     }
                 }
             }
+            System.out.println();
+            if (!encontrado) {
+                System.out.println("Registro não foi encontrado!");
+            } else
+                System.out.println("\nId pesquisado com sucesso");
         }
-        System.out.println();
-        if (!encontrado) {
-            System.out.println("Registro não foi encontrado!");
-        }else
-            System.out.println("\nId pesquisado com sucesso");
     }
 
 
@@ -349,9 +357,10 @@ public class ControleDeAcesso {
     }
 
     private static void deletarRegistro(){
-        matrizRegistrosDeAcesso = new String[][]{{}};
+        matrizRegistrosDeAcesso = new String[][]{};
         System.out.println("Deletado com sucesso!");
         salvarDadosNoArquivoRegistro();
+        matrizRegistrosDeAcesso = new String[][]{{"", "", ""}};
     }
 
     // Funções para persistência de dados
